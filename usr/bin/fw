@@ -1,0 +1,210 @@
+#!/usr/bin/perl
+require '/usr/lib/easywall/ConfigParse.pl';
+use POSIX qw/strftime/;
+&main();
+sub empty_args() {
+    print "$0 : Please specify option.\n";
+    print "$0 : For more detailed information use $0 --help or $0 -h\n";
+}
+sub new_help(){
+    print $lng{starttext}."";
+}
+sub print_help() {
+    print "/------------------------------------------------------------\\ \n";
+    print "|Commands:         |        Description:                     | \n";
+    print "|------------------|-----------------------------------------| \n";
+    print "|add-friend   (+fr)|  Add a friendly IP                      | \n";
+    print "|del-friend   (-fr)|  Delete frienly IP                      | \n";
+    print "|list-friend  (lfr)|  Show frienly IPs list                  | \n";
+    print "|------------------|-----------------------------------------| \n";
+    print "|add-white    (+wh)|  Add a full-access IP (Whitelisted)     | \n";
+    print "|del-white    (-wh)|  Delete a full-access IP                | \n";
+    print "|list-white   (lfl)|  Show full-acces IP list                | \n";
+    print "|------------------|-----------------------------------------| \n";
+    print "|add-black    (+bl)|  Add a blacklisted IP                   | \n";
+    print "|del-black    (-bl)|  Delete blacklisted IP                  | \n";
+    print "|list-black   (lbl)|  Show blacklisted IPs                   | \n";
+    print "|------------------|-----------------------------------------| \n";
+    print "|add-tcp       (+t)|  Add a rejected/droped TCP port         | \n";
+    print "|del-tcp       (-t)|  Delete a rejected TCP port             | \n";
+    print "|list-tcp      (lt)|  Show TCP rejected list                 | \n";
+    print "|------------------|-----------------------------------------| \n";
+    print "|add-udp       (+u)|  Add a rejected/droped UDP port         | \n";
+    print "|del-udp       (-u)|  Delete a rejected UDP port             | \n";
+    print "|list-udp      (lu)|  Show UDP rejected list                 | \n";
+    print "|------------------|-----------------------------------------| \n";
+    print "|add-shape    (+sh)|  Add a speed-limited IP                 | \n";
+    print "|del-shape    (-sh)|  Delete a speed-limited IP              | \n";
+    print "|list-shape   (lsh)|  Show speed-limited IPs                 | \n";
+    print "|------------------|-----------------------------------------| \n";
+    print "|add-net       (+n)|  Add a speed-limited network            | \n";
+    print "|del-net       (-n)|  Delete a speed-limited network         | \n";
+    print "|list-net      (ln)|  Show speed-limited networks            | \n";
+    print "\\------------------------------------------------------------/ \n";
+    print "Example:\n";
+    print "$0 add-friend 192.168.1.1\n";
+    print "$0 +fr 192.168.1.1 is an equivalent to the above.\n";
+    print "End of '--help' command.\n";
+}
+sub log_insert() {
+    ($data) = @_;
+    open(LOGFILE, ">>/var/log/easywall.log");
+    print LOGFILE $data."\n";
+    close(LOGFILE);
+    print $data."\n";
+}
+sub db_insert() {
+    ($var,$file) = @_;
+    $old = $file;
+    $new = "$file.tmp.$$";
+    open(OLD, "<$old");
+    open(NEW, ">$new");
+    while($line = <OLD>){
+	chomp($line);
+	if($line !~ /^$var$/){
+	    print NEW $line."\n";
+	}
+    }
+    print NEW $var."\n";
+    close(OLD);
+    close(NEW);
+    rename($new, $old);
+}
+sub db_remove() {
+    ($var,$file) = @_;
+    $old = $file;
+    $new = "$file.tmp.$$";
+    open(OLD, "<$old");
+    open(NEW, ">$new");
+    while($line = <OLD>){
+	chomp($line);
+	if($line !~ /^$var$/){
+	    print NEW $line."\n";
+	}
+    }
+    close(OLD);
+    close(NEW);
+    rename($new, $old);
+}
+sub add_ip() {
+    ($ip,$list,$file) = @_;
+    &db_insert($ip,$file);
+    local $log = "[$date]: $ip $lng{addtext} $list.";
+    &log_insert($log);
+    $runloader=`/etc/easywall/easyloader`;
+}
+sub del_ip() {
+    ($ip,$list,$file) = @_;
+    &db_remove($ip,$file);
+    local $log = "[$date]: $ip $lng{deltext} $list.";
+    &log_insert($log);
+    $runloader=`/etc/easywall/easyloader`;
+}
+sub get_list() {
+    ($file) = @_;
+    open(LIST, "<$file");
+    while($line = <LIST>){
+	chomp($line);
+	print $line."\n";
+    }
+    close(LIST);
+}
+sub main() {
+    $var = $ARGV[1];
+    $ip = $var;
+    if($ARGV[0]){ 
+	$func = $ARGV[0]; 
+    }else{ 
+	$func = ""; 
+    }
+    $date = strftime('%D %T',localtime);
+    $friend_file="/etc/easywall/db/friends.db";
+    $full_file="/etc/easywall/db/whitelist.db";
+    $limit_file="/etc/easywall/db/shaped.db";
+    $net_file="/etc/easywall/db/nets.db";
+    $shit_file="/etc/easywall/db/blacklist.db";
+    $tcp_file="/etc/easywall/db/tcp.db";
+    $udp_file="/etc/easywall/db/udp.db";    
+    if($func eq "add-friend" or $func eq "+fr"){ 
+	$list = "friends list";
+	$file = $friend_file;
+	&add_ip($ip,$list,$file);
+    }elsif($func eq "add-black" or $func eq "+bl"){ 
+	$list = "blacklist";
+	$file = $shit_file;
+	&add_ip($ip,$list,$file);
+    }elsif($func eq "add-white" or $func eq "+wh"){ 
+	$list = "whitelist";
+	$file = $full_file;
+	&add_ip($ip,$list,$file);
+    }elsif($func eq "add-tcp" or $func eq "+t"){ 
+	$list = "tcp port list";
+	$file = $tcp_file;
+	&add_ip($ip,$list,$file);
+    }elsif($func eq "add-udp" or $func eq "+u"){ 
+	$list = "udp port list";
+	$file = $udp_file;
+	&add_ip($ip,$list,$file);
+    }elsif($func eq "del-friend" or $func eq "-fr"){ 
+	$list = "friends list";
+	$file = $friend_file;
+	&del_ip($ip,$list,$file);
+    }elsif($func eq "del-black" or $func eq "-bl"){ 
+	$list = "blacklist";
+	$file = $shit_file;
+	&del_ip($ip,$list,$file);
+    }elsif($func eq "del-white" or $func eq "-wh"){
+	$list = "whitelist";
+	$file = $full_file;
+	&del_ip($ip,$list,$file);
+    }elsif($func eq "del-tcp" or $func eq "-t"){ 
+	$list = "tcp port list";
+	$file = $tcp_file;
+	&del_ip($ip,$list,$file);
+    }elsif($func eq "del-udp" or $func eq "-u"){ 
+	$list = "udp port list";
+	$file = $udp_file;
+	&del_ip($ip,$list,$file);
+    }elsif($func eq "add-shape" or $func eq "+sh"){ 
+	$list = "shaped list";
+	$file = $limit_file;
+	&add_ip($ip,$list,$file);
+    }elsif($func eq "del-shape" or $func eq "-sh"){ 
+	$list = "shaped list";
+	$file = $limit_file;
+	&del_ip($ip,$list,$file);
+    }elsif($func eq "add-net" or $func eq "+n"){ 
+	$list = "shaped networks list";
+	$file = $net_file;
+	&add_ip($ip,$list,$file);
+    }elsif($func eq "del-net" or $func eq "-n"){ 
+	$list = "shaped networks list";
+	$file = $net_file;
+	&del_ip($ip,$list,$file);
+    }elsif($func eq "list-net" or $func eq "ln"){ 
+	$file = $net_file;
+	&get_list($file);
+    }elsif($func eq "list-friend" or $func eq "lfr"){ 
+	$file = $friend_file;
+	&get_list($file);
+    }elsif($func eq "list-white" or $func eq "lwh"){ 
+	$file = $full_file;
+	&get_list($file);
+    }elsif($func eq "list-black" or $func eq "lbl"){ 
+	$file = $shit_file;
+	&get_list($file);
+    }elsif($func eq "list-tcp" or $func eq "lt"){ 
+	$file = $tcp_file;
+	&get_list($file);
+    }elsif($func eq "list-udp" or $func eq "lu"){ 
+	$file = $udp_file;
+	&get_list($file);
+    }elsif($func eq "list-shape" or $func eq "lsh"){ 
+	$file = $limit_file;
+	&get_list($file);
+    }elsif($func eq "--help" or $func eq "-h"){ 
+	&print_help(); 
+    }elsif($func eq ""){ 
+	&empty_args(); 
+    }
+}

@@ -1,0 +1,43 @@
+#!/usr/bin/perl
+require '/usr/lib/easywall/ConfigParse.pl';
+use POSIX qw/strftime/;
+$date = strftime('%D %T',localtime);
+main();
+sub log_insert() {
+    ($data) = @_;
+    open(LOGFILE, ">>/var/log/easywall.log");
+    print LOGFILE $data."\n";
+    close(LOGFILE);
+}
+sub fire_start() {
+    print $lng{starttext}."\n";
+    $exec=`/etc/easywall/easyloader`;
+    local $forlog="[$date]: Firewall started!";
+    &log_insert($forlog);
+}
+sub fire_stop() {
+    $c1=`iptables -F`;
+    $c2=`iptables -F -t nat`;
+    $c3=`iptables -X`;
+    $c4=`iptables -X -t nat`;
+    #$c5=`/etc/easywall/shape.stop`;
+    print $lng{stoptext}."\n";
+    local $forlog="[$date]: Firewall stoped!";
+    &log_insert($forlog);
+}
+sub fire_restart() {
+    fire_stop();
+    fire_start();
+}
+sub main() {
+    $func = $ARGV[0];
+    if($func eq "start") {
+	fire_start(); 
+    }elsif($func eq "stop"){
+	fire_stop(); 
+    }elsif($func eq "restart"){
+	fire_restart(); 
+    }else{ 
+	fire_restart(); 
+    }
+}

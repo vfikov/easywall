@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+main();
+sub main(){
+    $i = `which iptables`;
+    chomp($i);
+    &blacklist_rules();
+}
+sub blacklist_rules() {
+    $file = "/etc/easywall/db/blacklist.db";
+    open(LIST, "<$file");
+    while($line = <LIST>){
+        chomp($line);
+        $r1=`$i -A INPUT -s $line -p tcp -j REJECT --reject-with tcp-reset`;
+        $r2=`$i -A INPUT -s $line -p icmp -j DROP`;
+        $r3=`$i -A INPUT -s $line -p udp -j DROP`;
+    }
+    close(LIST);
+}

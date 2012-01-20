@@ -1,0 +1,42 @@
+#!/bin/bash
+#####################
+# Device Definition #
+DEV=eth0            #
+#####################
+/sbin/tc qdisc del dev $DEV root
+/sbin/tc qdisc add dev $DEV root handle 1: htb
+
+## No-Shape ports 
+/sbin/tc class add dev $DEV parent 1: classid 1:1 htb rate 100Mbit ceil 100Mbit
+#/sbin/tc filter add dev $DEV parent 1: protocol ip prio 1 u32 match ip sport 20 0xffff flowid 1:1
+#/sbin/tc filter add dev $DEV parent 1: protocol ip prio 1 u32 match ip sport 21 0xffff flowid 1:1
+#/sbin/tc filter add dev $DEV parent 1: protocol ip prio 1 u32 match ip sport 80 0xffff flowid 1:1
+#/sbin/tc filter add dev $DEV parent 1: protocol ip prio 1 u32 match ip sport 6667 0x1A0B flowid 1:1
+
+# TOS Minimum Delay (ssh, NOT scp)
+/sbin/tc filter add dev $DEV parent 1: protocol ip prio 1 u32 match ip tos 0x10 0xff  flowid 1:1
+
+# Shape no limit!! ( Friendly ip adresses )
+/sbin/tc class add dev $DEV parent 1: classid 1:2 htb rate 100Mbit ceil 100Mbit
+friends='/etc/easywall/db/friends.db'
+grep "^" $friends | while read ip;
+do
+    /sbin/tc filter add dev $DEV parent 1: protocol ip prio 1 u32 match ip dst $ip classid 1:2
+done
+
+# Shape limit for ip addresses with 10k per second limit!!!
+/sbin/tc class add dev $DEV parent 1: classid 1:3 htb rate 80Kbit ceil 80Kbit
+
+limited='/etc/easywall/db/shaped.db'
+grep "^" $limited | while read limit;
+do
+    /sbin/tc filter add dev $DEV parent 1: protocol ip prio 1 u32 match ip dst $limit classid 1:3
+done
+
+# Shape limit for networks with 10k per second limit!!!   
+/sbin/tc class add dev $DEV parent 1: classid 1:4 htb rate 80Kbit ceil 80Kbit
+nets='/etc/easywall/db/nets.db'
+grep "^" $nets | while read net;
+do
+    /sbin/tc filter add dev $DEV parent 1: protocol ip prio 16 u32 match ip dst $net classid 1:4
+done

@@ -1,0 +1,18 @@
+#!/bin/bash
+#pcanywhare
+#iptables -t nat -A PREROUTING -i eth1 -p tcp -d 10.4.4.1 --dport 5631 -j DNAT --to-destination 192.168.0.3:5631
+
+#unknown
+#iptables -t nat -A PREROUTING -i eth1 -p udp -d 10.4.4.1 --dport 8000 -j DNAT --to-destination 192.168.0.3:8000
+
+#WoW
+#iptables -t nat -A PREROUTING -p tcp --dport 3724 -j DNAT --to-destination 192.168.1.234:3724
+#iptables -t nat -A PREROUTING -p tcp --dport 8080 -j DNAT --to-destination 192.168.1.234:8080
+#iptables -t nat -A PREROUTING -p tcp --dport 8085 -j DNAT --to-destination 192.168.1.234:8085
+
+#voip
+#iptables -t nat -A POSTROUTING -s 192.168.0.3 -p udp --dport 5036 -j SNAT --to-source 10.4.4.1
+#iptables -t nat -A PREROUTING -s 10.4.4.1 -p udp --dport 5036 -j DNAT --to-destination 192.168.0.3:5036
+
+#recet port to
+#iptables -t  nat -A PREROUTING -p tcp --dport 6667 -i eth1 -j DNAT --to 10.4.4.20:6667
