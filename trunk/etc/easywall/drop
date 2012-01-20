@@ -1,0 +1,43 @@
+#!/usr/bin/perl
+main();
+sub main(){
+    $i = `which iptables`;
+    chomp($i);
+    &tcp_rules();
+    &udp_rules();
+    &icmp_rules();
+}
+sub tcp_rules() {
+    $file = "/etc/easywall/db/tcp.db";
+    open(LIST, "<$file");
+    while($line = <LIST>){
+        chomp($line);
+        $r1=`$i -A INPUT -p tcp --dport $tcp -j REJECT --reject-with tcp-reset`;
+    }
+    close(LIST);
+}
+sub udp_rules() {
+    $file = "/etc/easywall/db/udp.db";
+    open(LIST, "<$file");
+    while($line = <LIST>){
+        chomp($line);
+        $r1=`$i -A INPUT -p udp --dport $udp -j DROP`;
+    }
+    close(LIST);
+}
+sub icmp_rules(){
+    $drop = `$i -A INPUT -p icmp -j DROP`;
+
+}
+# Droping more than 1 conn
+#$i -A INPUT -p tcp --syn --dport 20 -m connlimit --connlimit-above 1 -j REJECT
+#$i -A INPUT -p tcp --syn --dport 21 -m connlimit --connlimit-above 1 -j REJECT
+#$i -A INPUT -p tcp --syn --dport 139 -m connlimit --connlimit-above 1 -j REJECT
+#$i -A INPUT -p tcp --syn --dport 445 -m connlimit --connlimit-above 1 -j REJECT
+#$i -A INPUT -p tcp --syn --dport 8080 -m connlimit --connlimit-above 1 -j REJECT
+# end
+
+# Droping ping
+#$i -A INPUT -p icmp -i eth0 -j REJECT --reject-with icmp-host-unreachable
+#$i -A INPUT -p icmp -i eth0 -j DROP
+# end

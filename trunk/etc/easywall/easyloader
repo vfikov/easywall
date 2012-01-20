@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+main();
+sub main(){
+    $i = `which iptables`;
+    chomp($i);
+    &clear_tables();
+    &load_rules();
+}
+sub clear_tables(){
+    $cl=`$i -F`;
+    $cl1=`$i -F -t nat`;
+    $cl2=`$i -X`;
+    $cl3=`$i -X -t nat`;
+}
+sub load_rules(){
+    $accept=`/etc/easywall/accept`;
+    $blacklist=`/etc/easywall/blacklist`;    
+    $drop=`/etc/easywall/drop`;
+    #$masq=`/etc/easywall/masq`;
+    #$dnat=`/etc/easywall/dnat`;
+    #$shape=`/etc/easywall/shape.init`;
+
+}

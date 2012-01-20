@@ -1,0 +1,6 @@
+#!/bin/bash
+#####################
+# Device Definition #
+DEV=eth0            #
+#####################
+/sbin/tc qdisc del dev $DEV root

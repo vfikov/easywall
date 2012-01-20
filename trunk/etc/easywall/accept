@@ -1,0 +1,29 @@
+#!/usr/bin/perl
+main();
+sub main(){
+    $i = `which iptables`;
+    chomp($i);
+    &friend_rules();
+    &whitelist_rules();
+}
+sub friend_rules() {
+    $file = "/etc/easywall/db/friends.db";
+    open(LIST, "<$file");
+    while($line = <LIST>){
+	chomp($line);
+	$r1=`$i -A INPUT -p tcp -s $line -m multiport --dport 22,21,80,7890 -j ACCEPT`;
+	$r2=`$i -A INPUT -p udp -s $line -m multiport -j ACCEPT`;
+        $r3=`$i -A INPUT -p icmp -s $line -j ACCEPT`;
+    }
+    close(LIST);
+}
+sub whitelist_rules() {
+    $file = "/etc/easywall/db/whitelist.db";
+    open(LIST, "<$file");
+    while($line = <LIST>){
+	chomp($line);
+        $r1=`$i -A INPUT -s $line -j ACCEPT`;
+
+    }
+    close(LIST);
+}

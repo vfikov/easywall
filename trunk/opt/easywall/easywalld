@@ -1,0 +1,52 @@
+#!/usr/bin/perl
+use IO::Socket::INET;
+use Proc::Daemon;
+use Proc::PID::File;
+use Net::IPv4Addr;
+Proc::Daemon::Init();
+if (Proc::PID::File->running()) {
+        exit(0);
+}
+while(1){
+    main();
+}
+sub fw{
+	($func, $ip) = @_;
+	$fw = `/usr/bin/fw $func $ip`;
+	chomp($fw);
+	#print $client_socket $fw;
+	$client_socket->send($fw);
+}
+sub main(){
+    $| = 1;
+    ($socket,$client_socket);
+    ($peeraddress,$peerport);
+    $socket = new IO::Socket::INET(
+	LocalHost => '127.0.0.1',
+	LocalPort => 8424,
+	Listen => 1,
+	ReuseAddr => 1,
+	Type => SOCK_STREAM,
+	Proto => 'tcp') || die "Error creating socket: $!";
+    $client_socket = $socket->accept();
+    while(<$client_socket>) {
+	@data = split(/:/, $_);
+	$addr = $data[1];
+	$func = $data[0];
+	chomp($addr);
+	chomp($func);
+	@v4 = split(/\./, $addr);
+	if(($v4[0] <= 0 || $v4[0] > 254) || ($v4[1] < 0 || $v4[1] > 254) || ($v4[2] < 0 || $v4[2] > 254) || ($v4[3] <= 0 || $v4[3] > 254)){
+	    print $client_socket "$4[0].$v4[1].$v4[2].$v4[3] not valid\n";
+	    $client_socket->close;
+	}elsif($func !~ m/[\+\-][a-zA-Z][a-zA-Z]/){
+	        print $client_socket "$func not valid\n";
+	    $client_socket->close;
+	}else{
+	    fw($func, $addr);
+	    #print $client_socket $exec;
+	    $client_socket->close;
+	}
+    }
+    close($socket);
+}
